@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>心動分歧點 (P2P版)</title>
+    <title>默契大考驗</title>
     <!-- 引入 PeerJS (連線用) 和 QRCode.js (產生QR碼用) -->
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -12,58 +12,61 @@
         .screen { display: none; height: 100vh; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
         .active { display: flex; }
         
-        h1 { margin-bottom: 10px; font-size: 24px; }
-        p { color: #ccc; margin-bottom: 20px; }
+        h1 { margin-bottom: 10px; font-size: 26px; letter-spacing: 1px; }
+        p { color: #ccc; margin-bottom: 30px; }
         
         input { padding: 12px; border-radius: 8px; border: none; font-size: 18px; text-align: center; width: 80%; margin-bottom: 15px; }
         
-        button { padding: 15px 30px; border-radius: 25px; border: none; font-size: 18px; font-weight: bold; cursor: pointer; width: 80%; max-width: 300px; margin: 10px 0; transition: 0.2s; }
-        .btn-create { background: #ff6b6b; color: white; }
-        .btn-join { background: #4facfe; color: white; }
-        .btn-copy { background: #666; color: white; font-size: 14px; padding: 10px; width: auto; }
+        button { padding: 18px 30px; border-radius: 30px; border: none; font-size: 18px; font-weight: bold; cursor: pointer; width: 85%; max-width: 320px; margin: 12px 0; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .btn-create { background: linear-gradient(45deg, #ff6b6b, #ee5253); color: white; }
+        .btn-join { background: linear-gradient(45deg, #4facfe, #00f2fe); color: white; }
+        .btn-copy { background: #666; color: white; font-size: 14px; padding: 10px; width: auto; box-shadow: none; }
 
         #game-area { width: 100%; max-width: 400px; position: relative; }
-        .question-card { background: white; color: #333; padding: 20px; border-radius: 15px; font-size: 20px; font-weight: bold; margin-bottom: 30px; min-height: 100px; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .question-card { background: white; color: #333; padding: 25px 20px; border-radius: 20px; font-size: 22px; font-weight: bold; margin-bottom: 30px; min-height: 120px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); line-height: 1.4; }
         
-        .choice-btn { display: block; width: 100%; padding: 20px; margin-bottom: 15px; border: none; border-radius: 15px; font-size: 18px; color: white; font-weight: bold; cursor: pointer; }
+        .choice-btn { display: block; width: 100%; padding: 20px; margin-bottom: 15px; border: none; border-radius: 15px; font-size: 19px; color: white; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
         .btn-a { background: #4facfe; } 
         .btn-b { background: #f093fb; }
         .btn-disabled { opacity: 0.5; pointer-events: none; }
+        .choice-btn:active { transform: scale(0.98); }
 
-        #feedback { font-size: 60px; font-weight: 900; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-shadow: 0 0 10px rgba(0,0,0,0.5); display: none; z-index: 99; }
+        #feedback { font-size: 70px; font-weight: 900; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-shadow: 0 5px 20px rgba(0,0,0,0.6); display: none; z-index: 99; }
 
         #qrcode { background: white; padding: 10px; margin: 10px auto; display: inline-block; border-radius: 10px; }
-        .status-tag { background: #333; padding: 5px 10px; border-radius: 5px; font-size: 12px; margin-top: 10px; color: #888; }
+        .status-tag { background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 15px; font-size: 13px; margin-top: 15px; color: #aaa; }
     </style>
 </head>
 <body>
 
     <!-- 1. 首頁 -->
     <div id="screen-home" class="screen active">
-        <h1>💞 心動分歧點</h1>
-        <p>無需安裝，即時連線</p>
-        <button class="btn-create" onclick="createRoom()">我是房主 (開房間)</button>
-        <button class="btn-join" onclick="toJoinScreen()">我是參加者 (加入)</button>
+        <h1>💞 默契大考驗</h1>
+        <p>無需安裝，直接開玩</p>
+        <!-- 更新後的文案 -->
+        <button class="btn-create" onclick="createRoom()">我是發起者（開始遊戲）</button>
+        <button class="btn-join" onclick="toJoinScreen()">我是挑戰者（加入挑戰）</button>
     </div>
 
-    <!-- 2. 房主等待區 -->
+    <!-- 2. 發起者等待區 -->
     <div id="screen-host" class="screen">
-        <h2>等待參加者...</h2>
+        <h2>等待挑戰者...</h2>
         <div id="qrcode"></div>
         <p style="font-size: 14px; margin-top:10px;">請對方掃描或輸入下方代碼：</p>
-        <h1 id="my-id-display" style="color:#ff6b6b; letter-spacing: 2px;">---</h1>
+        <h1 id="my-id-display" style="color:#ff6b6b; letter-spacing: 3px; font-size: 40px;">---</h1>
         <button class="btn-copy" onclick="copyID()">複製代碼</button>
         <div class="status-tag" id="host-status">正在連線到伺服器...</div>
-        <button onclick="location.reload()" style="background: transparent; border: 1px solid #666; color: #888; font-size: 14px; margin-top: 20px;">取消</button>
+        <button onclick="location.reload()" style="background: transparent; border: 1px solid #555; color: #888; font-size: 14px; margin-top: 30px; width: auto; padding: 10px 20px;">取消</button>
     </div>
 
-    <!-- 3. 參加者輸入區 -->
+    <!-- 3. 挑戰者輸入區 -->
     <div id="screen-join" class="screen">
-        <h2>加入房間</h2>
-        <input type="text" id="input-id" placeholder="輸入房主代碼 (例如: ABCD)">
+        <h2>加入挑戰</h2>
+        <p>請輸入發起者畫面上的代碼</p>
+        <input type="tel" id="input-id" placeholder="例如: 1234" maxlength="4">
         <button class="btn-join" onclick="joinRoom()">連線！</button>
         <div class="status-tag" id="join-status">準備中...</div>
-        <button onclick="location.reload()" style="background: transparent; border: 1px solid #666; color: #888; font-size: 14px; margin-top: 20px;">返回</button>
+        <button onclick="location.reload()" style="background: transparent; border: 1px solid #555; color: #888; font-size: 14px; margin-top: 30px; width: auto; padding: 10px 20px;">返回</button>
     </div>
 
     <!-- 4. 遊戲進行區 -->
@@ -79,58 +82,53 @@
 
     <!-- 5. 結算區 -->
     <div id="screen-result" class="screen">
-        <h2>默契指數</h2>
-        <div style="font-size: 80px; font-weight: bold; margin: 20px 0;" id="final-score">0%</div>
-        <p id="final-comment">分析中...</p>
+        <h2>最終默契指數</h2>
+        <div style="font-size: 90px; font-weight: bold; margin: 20px 0; color: #f093fb;" id="final-score">0%</div>
+        <p id="final-comment" style="font-size: 20px; color: white;">分析中...</p>
         <button class="btn-create" onclick="location.reload()">再玩一次</button>
     </div>
 
     <script>
-        // --- 題庫 ---
+        // --- 更新後的題庫 ---
         const questions = [
-            { q: "週末去書店，你會先逛哪區？", a: "暢銷排行榜", b: "角落冷門書" },
-            { q: "看到一半主角做了蠢事？", a: "氣到蓋上書", b: "繼續看他多慘" },
-            { q: "喜歡的書拍成電影了？", a: "一定要去看！", b: "怕毀原著，不看" },
-            { q: "約會遲到了，原因是？", a: "睡過頭/看書忘我", b: "打扮太久" },
-            { q: "愛情的結局希望是？", a: "遺憾的淒美", b: "俗套的圓滿" }
+            { q: "週末去書店你會先逛哪一區？", a: "熱門書區", b: "角落冷門區" },
+            { q: "麵線送來時，你的選擇是？", a: "老闆！香菜加爆", b: "絕對不要香菜" },
+            { q: "出國旅遊時，你是哪一派？", a: "行程表排滿滿", b: "睡到自然醒" },
+            { q: "電影結局是悲劇 (Bad Ending)，你會？", a: "覺得後勁強，喜歡", b: "心情不好，不喜歡" },
+            { q: "遇到喜歡的人，你會？", a: "主動出擊", b: "暗示試探" }
         ];
 
         // --- 變數 ---
         let peer;
         let conn;
-        let myRole = ''; // 'host' or 'client'
+        let myRole = ''; 
         let currentQIndex = 0;
         let myChoice = null;
         let opponentChoice = null;
         let score = 0;
 
-        // --- 畫面切換 ---
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
         }
 
-        // --- 1. 房主邏輯 (Host) ---
+        // --- 發起者邏輯 ---
         function createRoom() {
             myRole = 'host';
             showScreen('screen-host');
-            
-            // 產生 4 位數隨機 ID，方便輸入
+            // 產生 4 位數隨機數字 ID
             const randomID = Math.floor(1000 + Math.random() * 9000).toString();
             
-            // 初始化 Peer
             peer = new Peer(randomID); 
 
             peer.on('open', (id) => {
                 document.getElementById('host-status').innerText = "等待連線中...";
                 document.getElementById('my-id-display').innerText = id;
                 
-                // 產生 QR Code (包含完整的網址+參數，這樣參加者只要掃碼就能自動填入)
-                // 注意：這裡假設你放在 GitHub Pages，網址會是你的網址
-                const currentURL = window.location.href.split('?')[0]; 
-                // 為了方便，如果是在電腦測試，可能需要手動輸，這裡 QR Code 存純 ID 或是 帶參數的 URL
+                // 產生 QR Code
+                document.getElementById("qrcode").innerHTML = "";
                 new QRCode(document.getElementById("qrcode"), {
-                    text: id, // 簡單起見，QR Code 掃出來是數字，方便對方輸入
+                    text: window.location.href, // 掃描直接打開網址
                     width: 180,
                     height: 180
                 });
@@ -139,12 +137,12 @@
             peer.on('connection', (c) => {
                 conn = c;
                 setupConnection();
-                document.getElementById('host-status').innerText = "連線成功！準備開始...";
+                document.getElementById('host-status').innerText = "連線成功！即將開始...";
                 setTimeout(startGame, 1500);
             });
             
             peer.on('error', (err) => {
-                alert('ID 可能重複或連線失敗，請重試。');
+                alert('連線發生錯誤，請重新整理再試一次。');
                 location.reload();
             });
         }
@@ -152,22 +150,22 @@
         function copyID() {
             const id = document.getElementById('my-id-display').innerText;
             navigator.clipboard.writeText(id);
-            alert('已複製: ' + id);
+            alert('已複製代碼: ' + id);
         }
 
-        // --- 2. 參加者邏輯 (Client) ---
+        // --- 挑戰者邏輯 ---
         function toJoinScreen() {
             showScreen('screen-join');
         }
 
         function joinRoom() {
             const targetID = document.getElementById('input-id').value;
-            if(!targetID) return alert('請輸入代碼');
+            if(targetID.length !== 4) return alert('請輸入 4 位數代碼');
 
             document.getElementById('join-status').innerText = "連線中...";
             myRole = 'client';
             
-            peer = new Peer(); // 參加者的 ID 隨機即可
+            peer = new Peer(); 
 
             peer.on('open', () => {
                 conn = peer.connect(targetID);
@@ -176,17 +174,16 @@
                     setupConnection();
                 });
                 
-                // 如果連線失敗
                 setTimeout(() => {
                     if(!conn.open) {
-                        alert('找不到房間或連線失敗，請確認代碼');
-                        document.getElementById('join-status').innerText = "連線失敗";
+                        alert('找不到房間或連線失敗，請確認代碼是否正確');
+                        document.getElementById('join-status').innerText = "請重試";
                     }
                 }, 5000);
             });
         }
 
-        // --- 3. 共通連線處理 ---
+        // --- 共通連線處理 ---
         function setupConnection() {
             conn.on('data', (data) => {
                 handleData(data);
@@ -195,7 +192,6 @@
 
         function handleData(data) {
             if (data.type === 'new_question') {
-                // 顯示題目
                 showScreen('screen-game');
                 resetRound();
                 document.getElementById('q-text').innerText = data.q.q;
@@ -204,21 +200,18 @@
                 currentQIndex = data.index;
                 
             } else if (data.type === 'opponent_choice') {
-                // 收到對手選擇 (Host 收 Client, Client 收 Host)
                 opponentChoice = data.choice;
                 checkResult();
 
             } else if (data.type === 'round_result') {
-                // Client 收到 Host 算好的結果
                 showFeedback(data.match);
                 
             } else if (data.type === 'game_over') {
-                // 遊戲結束
                 showResult(data.score);
             }
         }
 
-        // --- 4. 遊戲流程 ---
+        // --- 遊戲流程 ---
         function startGame() {
             score = 0;
             currentQIndex = 0;
@@ -227,7 +220,6 @@
 
         function sendQuestion() {
             if (currentQIndex >= questions.length) {
-                // 結算
                 const resultData = { type: 'game_over', score: score };
                 conn.send(resultData);
                 showResult(score);
@@ -235,9 +227,7 @@
             }
             
             const q = questions[currentQIndex];
-            // Host 顯示題目
             handleData({ type: 'new_question', q: q, index: currentQIndex });
-            // Host 告訴 Client 題目
             conn.send({ type: 'new_question', q: q, index: currentQIndex });
         }
 
@@ -252,16 +242,14 @@
         }
 
         function makeChoice(choice) {
-            if (myChoice) return; // 防止重複按
+            if (myChoice) return; 
             myChoice = choice;
             
-            // 視覺回饋
             document.getElementById('btn-a').classList.add('btn-disabled');
             document.getElementById('btn-b').classList.add('btn-disabled');
             document.getElementById('btn-' + choice).style.opacity = '1';
             document.getElementById('btn-' + (choice === 'a' ? 'b' : 'a')).style.opacity = '0.3';
 
-            // 告訴對方我選了什麼
             conn.send({ type: 'opponent_choice', choice: choice });
             
             document.getElementById('game-status').innerText = "等待對方選擇...";
@@ -269,27 +257,23 @@
         }
 
         function checkResult() {
-            // 只有 Host 負責計算結果，避免不同步
             if (myRole === 'host' && myChoice && opponentChoice) {
                 const match = (myChoice === opponentChoice);
                 if (match) score++;
                 
-                // 告訴自己
                 showFeedback(match);
-                // 告訴對方
                 conn.send({ type: 'round_result', match: match });
 
-                // 下一題倒數
                 setTimeout(() => {
                     currentQIndex++;
                     sendQuestion();
-                }, 2500);
+                }, 2000);
             }
         }
 
         function showFeedback(match) {
             const fb = document.getElementById('feedback');
-            fb.innerText = match ? "💖 默契！" : "💥 碰撞！";
+            fb.innerText = match ? "⭕" : "❌";
             fb.style.color = match ? "#42e695" : "#ff4757";
             fb.style.display = 'block';
         }
@@ -300,9 +284,11 @@
             document.getElementById('final-score').innerText = percentage + "%";
             
             let comment = "";
-            if (percentage >= 80) comment = "靈魂伴侶！請原地結婚！";
-            else if (percentage >= 50) comment = "個性互補，很有話聊喔！";
-            else comment = "火星撞地球，這對更有趣！";
+            if (percentage == 100) comment = "天作之合！這是命運吧！";
+            else if (percentage >= 80) comment = "默契超好！快約下次吃飯！";
+            else if (percentage >= 60) comment = "蠻合得來的喔，有很多話題可聊";
+            else if (percentage >= 40) comment = "性格互補，反而更有火花？";
+            else comment = "世界觀完全不同，這太有趣了！";
             document.getElementById('final-comment').innerText = comment;
         }
     </script>
