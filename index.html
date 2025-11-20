@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>默契大考驗</title>
-    <!-- 引入 PeerJS (連線用) 和 QRCode.js (產生QR碼用) -->
+    <!-- 引入 PeerJS 和 QRCode -->
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
@@ -43,7 +43,6 @@
     <div id="screen-home" class="screen active">
         <h1>💞 默契大考驗</h1>
         <p>無需安裝，直接開玩</p>
-        <!-- 更新後的文案 -->
         <button class="btn-create" onclick="createRoom()">我是發起者（開始遊戲）</button>
         <button class="btn-join" onclick="toJoinScreen()">我是挑戰者（加入挑戰）</button>
     </div>
@@ -55,7 +54,7 @@
         <p style="font-size: 14px; margin-top:10px;">請對方掃描或輸入下方代碼：</p>
         <h1 id="my-id-display" style="color:#ff6b6b; letter-spacing: 3px; font-size: 40px;">---</h1>
         <button class="btn-copy" onclick="copyID()">複製代碼</button>
-        <div class="status-tag" id="host-status">正在連線到伺服器...</div>
+        <div class="status-tag" id="host-status">正在建立連線伺服器...</div>
         <button onclick="location.reload()" style="background: transparent; border: 1px solid #555; color: #888; font-size: 14px; margin-top: 30px; width: auto; padding: 10px 20px;">取消</button>
     </div>
 
@@ -89,7 +88,7 @@
     </div>
 
     <script>
-        // --- 更新後的題庫 ---
+        // --- 題庫 ---
         const questions = [
             { q: "週末去書店你會先逛哪一區？", a: "熱門書區", b: "角落冷門區" },
             { q: "麵線送來時，你的選擇是？", a: "老闆！香菜加爆", b: "絕對不要香菜" },
@@ -97,6 +96,16 @@
             { q: "電影結局是悲劇 (Bad Ending)，你會？", a: "覺得後勁強，喜歡", b: "心情不好，不喜歡" },
             { q: "遇到喜歡的人，你會？", a: "主動出擊", b: "暗示試探" }
         ];
+
+        // --- 連線設定 (STUN Server - 穿透防火牆關鍵) ---
+        const peerConfig = {
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            }
+        };
 
         // --- 變數 ---
         let peer;
@@ -116,19 +125,18 @@
         function createRoom() {
             myRole = 'host';
             showScreen('screen-host');
-            // 產生 4 位數隨機數字 ID
             const randomID = Math.floor(1000 + Math.random() * 9000).toString();
             
-            peer = new Peer(randomID); 
+            // 加入 config 設定
+            peer = new Peer(randomID, peerConfig); 
 
             peer.on('open', (id) => {
-                document.getElementById('host-status').innerText = "等待連線中...";
+                document.getElementById('host-status').innerText = "房間已建立，等待挑戰者...";
                 document.getElementById('my-id-display').innerText = id;
                 
-                // 產生 QR Code
                 document.getElementById("qrcode").innerHTML = "";
                 new QRCode(document.getElementById("qrcode"), {
-                    text: window.location.href, // 掃描直接打開網址
+                    text: window.location.href, 
                     width: 180,
                     height: 180
                 });
@@ -142,7 +150,9 @@
             });
             
             peer.on('error', (err) => {
-                alert('連線發生錯誤，請重新整理再試一次。');
+                // 忽略一些不重要的錯誤
+                if(err.type === 'peer-unavailable') return;
+                alert('網路連線不穩，請重新整理網頁再試一次');
                 location.reload();
             });
         }
@@ -162,24 +172,38 @@
             const targetID = document.getElementById('input-id').value;
             if(targetID.length !== 4) return alert('請輸入 4 位數代碼');
 
-            document.getElementById('join-status').innerText = "連線中...";
+            document.getElementById('join-status').innerText = "正在搜尋房間...";
             myRole = 'client';
             
-            peer = new Peer(); 
+            // 加入 config 設定
+            peer = new Peer(null, peerConfig); 
 
             peer.on('open', () => {
+                document.getElementById('join-status').innerText = "連線中...";
                 conn = peer.connect(targetID);
+                
+                // 連線成功的監聽
                 conn.on('open', () => {
                     document.getElementById('join-status').innerText = "連線成功！";
                     setupConnection();
                 });
                 
+                // 連線失敗的處理
                 setTimeout(() => {
                     if(!conn.open) {
-                        alert('找不到房間或連線失敗，請確認代碼是否正確');
-                        document.getElementById('join-status').innerText = "請重試";
+                        document.getElementById('join-status').innerText = "連線超時";
+                        alert('連線失敗！\n\n請嘗試：\n1. 確保雙方網路順暢\n2. 請發起者重新整理頁面，產生新代碼\n3. 建議雙方使用相同的 Wi-Fi');
                     }
-                }, 5000);
+                }, 8000); // 給予更長的連線時間 (8秒)
+            });
+
+            peer.on('error', (err) => {
+                if(err.type === 'peer-unavailable') {
+                    alert('找不到這個代碼，請確認發起者是否還在等待畫面上。');
+                } else {
+                    alert('連線錯誤: ' + err.type);
+                }
+                document.getElementById('join-status').innerText = "錯誤";
             });
         }
 
