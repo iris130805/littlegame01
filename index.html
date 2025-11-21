@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>默契大考驗</title>
+    <title>默契大考驗 (新題目版)</title>
     <!-- 引入 PeerJS 和 QRCode -->
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -23,15 +23,20 @@
         .btn-copy { background: #666; color: white; font-size: 14px; padding: 10px; width: auto; box-shadow: none; }
 
         #game-area { width: 100%; max-width: 400px; position: relative; }
-        .question-card { background: white; color: #333; padding: 25px 20px; border-radius: 20px; font-size: 22px; font-weight: bold; margin-bottom: 30px; min-height: 120px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); line-height: 1.4; }
+        /* 調整卡片高度 */
+        .question-card { background: white; color: #333; padding: 20px; border-radius: 20px; font-size: 20px; font-weight: bold; margin-bottom: 20px; min-height: 100px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); line-height: 1.4; }
         
-        .choice-btn { display: block; width: 100%; padding: 20px; margin-bottom: 15px; border: none; border-radius: 15px; font-size: 19px; color: white; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
-        .btn-a { background: #4facfe; } 
-        .btn-b { background: #f093fb; }
+        /* 選項按鈕樣式 */
+        .choice-btn { display: block; width: 100%; padding: 15px; margin-bottom: 12px; border: none; border-radius: 15px; font-size: 18px; color: white; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
+        
+        .btn-a { background: #4facfe; } /* 藍色 */
+        .btn-b { background: #f093fb; } /* 粉色 */
+        .btn-c { background: #20bf6b; } /* 綠色 */
+
         .btn-disabled { opacity: 0.5; pointer-events: none; }
         .choice-btn:active { transform: scale(0.98); }
 
-        #feedback { font-size: 70px; font-weight: 900; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-shadow: 0 5px 20px rgba(0,0,0,0.6); display: none; z-index: 99; }
+        #feedback { font-size: 80px; font-weight: 900; position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-shadow: 0 5px 20px rgba(0,0,0,0.6); display: none; z-index: 99; }
 
         #qrcode { background: white; padding: 10px; margin: 10px auto; display: inline-block; border-radius: 10px; }
         .status-tag { background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 15px; font-size: 13px; margin-top: 15px; color: #aaa; }
@@ -41,8 +46,8 @@
 
     <!-- 1. 首頁 -->
     <div id="screen-home" class="screen active">
-        <h1>💞 默契大考驗</h1>
-        <p>無需安裝，直接開玩</p>
+        <h1>💞 書適圈｜默契大考驗</h1>
+        <p>終極三選一，START！</p>
         <button class="btn-create" onclick="createRoom()">我是發起者（開始遊戲）</button>
         <button class="btn-join" onclick="toJoinScreen()">我是挑戰者（加入挑戰）</button>
     </div>
@@ -73,8 +78,11 @@
         <div id="game-area">
             <div id="feedback"></div>
             <div class="question-card" id="q-text">題目載入中...</div>
+            
             <button class="choice-btn btn-a" id="btn-a" onclick="makeChoice('a')">選項 A</button>
             <button class="choice-btn btn-b" id="btn-b" onclick="makeChoice('b')">選項 B</button>
+            <button class="choice-btn btn-c" id="btn-c" onclick="makeChoice('c')">選項 C</button>
+            
         </div>
         <div class="status-tag" id="game-status">遊戲進行中</div>
     </div>
@@ -88,16 +96,16 @@
     </div>
 
     <script>
-        // --- 題庫 ---
+        // --- 題庫 (已更新為你的題目) ---
         const questions = [
-            { q: "週末去書店你會先逛哪一區？", a: "熱門書區", b: "角落冷門區" },
-            { q: "麵線送來時，你的選擇是？", a: "老闆！香菜加爆", b: "絕對不要香菜" },
-            { q: "出國旅遊時，你是哪一派？", a: "行程表排滿滿", b: "睡到自然醒" },
-            { q: "電影結局是悲劇 (Bad Ending)，你會？", a: "覺得後勁強，喜歡", b: "心情不好，不喜歡" },
-            { q: "遇到喜歡的人，你會？", a: "主動出擊", b: "暗示試探" }
+            { q: "你最喜歡看哪種類型的書？", a: "文學小說", b: "商業理財", c: "心理勵志" },
+            { q: "麵線送來時，你的選擇是？", a: "老闆！香菜加爆", b: "絕對不要香菜", c: "我討厭麵線" },
+            { q: "你是什麼作息型？", a: "早起鳥", b: "夜貓子", c: "混亂的作息" },
+            { q: "電影結局是悲劇 (Bad Ending)，你會？", a: "覺得後勁強，喜歡", b: "心情不好，不喜歡", c: "人生太苦，不看悲劇" },
+            { q: "遇到喜歡的人，你會？", a: "主動出擊", b: "暗示試探", c: "只敢偷偷暗戀" }
         ];
 
-        // --- 連線設定 (STUN Server - 穿透防火牆關鍵) ---
+        // --- 連線設定 ---
         const peerConfig = {
             config: {
                 iceServers: [
@@ -127,7 +135,6 @@
             showScreen('screen-host');
             const randomID = Math.floor(1000 + Math.random() * 9000).toString();
             
-            // 加入 config 設定
             peer = new Peer(randomID, peerConfig); 
 
             peer.on('open', (id) => {
@@ -150,7 +157,6 @@
             });
             
             peer.on('error', (err) => {
-                // 忽略一些不重要的錯誤
                 if(err.type === 'peer-unavailable') return;
                 alert('網路連線不穩，請重新整理網頁再試一次');
                 location.reload();
@@ -175,26 +181,23 @@
             document.getElementById('join-status').innerText = "正在搜尋房間...";
             myRole = 'client';
             
-            // 加入 config 設定
             peer = new Peer(null, peerConfig); 
 
             peer.on('open', () => {
                 document.getElementById('join-status').innerText = "連線中...";
                 conn = peer.connect(targetID);
                 
-                // 連線成功的監聽
                 conn.on('open', () => {
                     document.getElementById('join-status').innerText = "連線成功！";
                     setupConnection();
                 });
                 
-                // 連線失敗的處理
                 setTimeout(() => {
                     if(!conn.open) {
                         document.getElementById('join-status').innerText = "連線超時";
-                        alert('連線失敗！\n\n請嘗試：\n1. 確保雙方網路順暢\n2. 請發起者重新整理頁面，產生新代碼\n3. 建議雙方使用相同的 Wi-Fi');
+                        alert('連線失敗！請確認代碼正確或網路暢通。');
                     }
-                }, 8000); // 給予更長的連線時間 (8秒)
+                }, 8000);
             });
 
             peer.on('error', (err) => {
@@ -221,6 +224,7 @@
                 document.getElementById('q-text').innerText = data.q.q;
                 document.getElementById('btn-a').innerText = data.q.a;
                 document.getElementById('btn-b').innerText = data.q.b;
+                document.getElementById('btn-c').innerText = data.q.c;
                 currentQIndex = data.index;
                 
             } else if (data.type === 'opponent_choice') {
@@ -259,20 +263,27 @@
             myChoice = null;
             opponentChoice = null;
             document.getElementById('feedback').style.display = 'none';
-            document.getElementById('btn-a').classList.remove('btn-disabled');
-            document.getElementById('btn-b').classList.remove('btn-disabled');
-            document.getElementById('btn-a').style.opacity = '1';
-            document.getElementById('btn-b').style.opacity = '1';
+            
+            ['a', 'b', 'c'].forEach(opt => {
+                const btn = document.getElementById('btn-' + opt);
+                btn.classList.remove('btn-disabled');
+                btn.style.opacity = '1';
+            });
         }
 
         function makeChoice(choice) {
             if (myChoice) return; 
             myChoice = choice;
             
-            document.getElementById('btn-a').classList.add('btn-disabled');
-            document.getElementById('btn-b').classList.add('btn-disabled');
-            document.getElementById('btn-' + choice).style.opacity = '1';
-            document.getElementById('btn-' + (choice === 'a' ? 'b' : 'a')).style.opacity = '0.3';
+            ['a', 'b', 'c'].forEach(opt => {
+                const btn = document.getElementById('btn-' + opt);
+                btn.classList.add('btn-disabled');
+                if (opt !== choice) {
+                    btn.style.opacity = '0.3';
+                } else {
+                    btn.style.opacity = '1';
+                }
+            });
 
             conn.send({ type: 'opponent_choice', choice: choice });
             
