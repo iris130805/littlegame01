@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>默契大考驗 (無限續玩版)</title>
+    <title>默契大考驗 (5題極速版)</title>
     <!-- 引入 PeerJS 和 QRCode -->
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -94,13 +94,12 @@
         <h2>最終默契指數</h2>
         <div style="font-size: 90px; font-weight: bold; margin: 20px 0; color: #f093fb;" id="final-score">0%</div>
         <p id="final-comment" style="font-size: 20px; color: white;">分析中...</p>
-        <!-- 修改：按鈕改為觸發 requestRestart，而不是 reload -->
-        <button class="btn-create" id="btn-restart" onclick="requestRestart()">再來一局 (不用重連)</button>
-        <div id="restart-msg" style="color:#888; font-size:13px; margin-top:10px; display:none;">等待對方確認中...</div>
+        <!-- 修改：按鈕觸發重新整理網頁，斷開連線 -->
+        <button class="btn-create" onclick="location.reload()">重新配對連線</button>
     </div>
 
     <script>
-        // --- 設定：每局玩 5 題 ---
+        // --- 設定：每局玩幾題 ---
         const QUESTIONS_PER_GAME = 5; 
 
         // --- 50 題題庫 ---
@@ -261,14 +260,6 @@
 
             } else if (data.type === 'game_over') {
                 showResult(data.score, data.total);
-            
-            } else if (data.type === 'restart_game') {
-                // 挑戰者收到重開訊號 -> 顯示等待畫面等題目
-                document.getElementById('restart-msg').innerText = "對方已發起新局，準備中...";
-                document.getElementById('restart-msg').style.display = 'block';
-            } else if (data.type === 'request_restart') {
-                // 發起者收到挑戰者的重開請求 -> 直接開始
-                if (myRole === 'host') restartGame();
             }
         }
 
@@ -286,33 +277,6 @@
             score = 0;
             currentQIndex = 0;
             sendQuestion();
-        }
-
-        // 新增：重置遊戲邏輯 (不重新整理網頁)
-        function restartGame() {
-            document.getElementById('btn-restart').disabled = false;
-            document.getElementById('restart-msg').style.display = 'none';
-            // 重新洗牌
-            initGameQuestions(); 
-            // 通知挑戰者準備開始
-            conn.send({ type: 'restart_game' });
-            // 延遲一下開始
-            setTimeout(startGame, 1000);
-        }
-
-        function requestRestart() {
-            const btn = document.getElementById('btn-restart');
-            btn.disabled = true;
-            document.getElementById('restart-msg').style.display = 'block';
-            
-            if (myRole === 'host') {
-                // Host 直接重開
-                restartGame();
-            } else {
-                // Client 發送請求給 Host
-                conn.send({ type: 'request_restart' });
-                document.getElementById('restart-msg').innerText = "已發送請求，等待發起者開始...";
-            }
         }
 
         function sendQuestion() {
@@ -373,8 +337,6 @@
 
         function showResult(finalScore, totalQuestions) {
             showScreen('screen-result');
-            document.getElementById('btn-restart').disabled = false;
-            document.getElementById('restart-msg').style.display = 'none';
             
             const percentage = Math.round((finalScore / totalQuestions) * 100);
             document.getElementById('final-score').innerText = percentage + "%";
