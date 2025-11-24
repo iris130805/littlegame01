@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>默契大考驗 (50題隨機版)</title>
+    <title>默契大考驗 (無限續玩版)</title>
     <!-- 引入 PeerJS 和 QRCode -->
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -12,8 +12,8 @@
         .screen { display: none; height: 100vh; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
         .active { display: flex; }
         
-        h1 { margin-bottom: 10px; font-size: 24px; letter-spacing: 1px; }
-        p { color: #ccc; margin-bottom: 30px; font-size: 14px; }
+        h1 { margin-bottom: 10px; font-size: 26px; letter-spacing: 1px; }
+        p { color: #ccc; margin-bottom: 30px; font-size: 15px; }
         
         input { padding: 12px; border-radius: 8px; border: none; font-size: 18px; text-align: center; width: 80%; margin-bottom: 15px; }
         
@@ -24,15 +24,13 @@
 
         #game-area { width: 100%; max-width: 400px; position: relative; }
         
-        /* 題目卡片樣式優化 */
         .question-card { background: white; color: #333; padding: 25px 20px; border-radius: 20px; font-size: 22px; font-weight: bold; margin-bottom: 20px; min-height: 110px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); line-height: 1.4; }
         
-        /* 選項按鈕樣式 */
-        .choice-btn { display: block; width: 100%; padding: 16px; margin-bottom: 12px; border: none; border-radius: 15px; font-size: 17px; color: white; font-weight: bold; cursor: pointer; transition: transform 0.1s; position: relative; overflow: hidden; }
+        .choice-btn { display: block; width: 100%; padding: 16px; margin-bottom: 12px; border: none; border-radius: 15px; font-size: 17px; color: white; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
         
-        .btn-a { background: #4facfe; } /* 藍色 */
-        .btn-b { background: #f093fb; } /* 粉色 */
-        .btn-c { background: #20bf6b; } /* 綠色 */
+        .btn-a { background: #4facfe; } 
+        .btn-b { background: #f093fb; } 
+        .btn-c { background: #20bf6b; } 
 
         .btn-disabled { opacity: 0.5; pointer-events: none; }
         .choice-btn:active { transform: scale(0.98); }
@@ -50,7 +48,7 @@
     <!-- 1. 首頁 -->
     <div id="screen-home" class="screen active">
         <h1>💞 書適圈｜默契大考驗</h1>
-        <p>50題隨機題庫版<br>每次挑戰題目都不同！</p>
+        <p>終極三選一，START！</p>
         <button class="btn-create" onclick="createRoom()">我是發起者（開始）</button>
         <button class="btn-join" onclick="toJoinScreen()">我是挑戰者（加入）</button>
     </div>
@@ -78,7 +76,7 @@
 
     <!-- 4. 遊戲進行區 -->
     <div id="screen-game" class="screen">
-        <div id="progress-bar">題目 1 / 10</div>
+        <div id="progress-bar">題目 1 / 5</div>
         <div id="game-area">
             <div id="feedback"></div>
             <div class="question-card" id="q-text">題目載入中...</div>
@@ -96,15 +94,16 @@
         <h2>最終默契指數</h2>
         <div style="font-size: 90px; font-weight: bold; margin: 20px 0; color: #f093fb;" id="final-score">0%</div>
         <p id="final-comment" style="font-size: 20px; color: white;">分析中...</p>
-        <button class="btn-create" onclick="location.reload()">再玩一次 (換新題目)</button>
+        <!-- 修改：按鈕改為觸發 requestRestart，而不是 reload -->
+        <button class="btn-create" id="btn-restart" onclick="requestRestart()">再來一局 (不用重連)</button>
+        <div id="restart-msg" style="color:#888; font-size:13px; margin-top:10px; display:none;">等待對方確認中...</div>
     </div>
 
     <script>
-        // --- 設定：每局玩幾題？ ---
-        // 建議設為 10 題，這樣 50 題庫可以玩很多次不重複
-        const QUESTIONS_PER_GAME = 10; 
+        // --- 設定：每局玩 5 題 ---
+        const QUESTIONS_PER_GAME = 5; 
 
-        // --- 你的 50 題題庫 ---
+        // --- 50 題題庫 ---
         const questionPool = [
             { q: "你最喜歡看哪種類型的書？", a: "文學小說", b: "商業理財", c: "心理勵志" },
             { q: "麵線送來時，你的選擇是？", a: "老闆！香菜加爆", b: "絕對不要香菜", c: "我討厭麵線" },
@@ -167,7 +166,6 @@
             }
         };
 
-        // --- 全域變數 ---
         let peer;
         let conn;
         let myRole = ''; 
@@ -175,42 +173,32 @@
         let myChoice = null;
         let opponentChoice = null;
         let score = 0;
-        let currentGameQuestions = []; // 用來存當局隨機選出的題目
+        let currentGameQuestions = []; 
 
-        // --- 畫面切換 ---
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
         }
 
-        // --- 發起者邏輯 (Host) ---
+        // --- Host Logic ---
         function createRoom() {
             myRole = 'host';
             showScreen('screen-host');
             const randomID = Math.floor(1000 + Math.random() * 9000).toString();
-            
             peer = new Peer(randomID, peerConfig); 
 
             peer.on('open', (id) => {
                 document.getElementById('host-status').innerText = "等待挑戰者...";
                 document.getElementById('my-id-display').innerText = id;
-                
                 document.getElementById("qrcode").innerHTML = "";
-                new QRCode(document.getElementById("qrcode"), {
-                    text: window.location.href, 
-                    width: 180,
-                    height: 180
-                });
+                new QRCode(document.getElementById("qrcode"), { text: window.location.href, width: 180, height: 180 });
             });
 
             peer.on('connection', (c) => {
                 conn = c;
                 setupConnection();
                 document.getElementById('host-status').innerText = "連線成功！";
-                
-                // --- 關鍵修改：發起者負責洗牌 ---
                 initGameQuestions();
-                
                 setTimeout(startGame, 1500);
             });
             
@@ -222,100 +210,75 @@
         }
 
         function copyID() {
-            const id = document.getElementById('my-id-display').innerText;
-            navigator.clipboard.writeText(id);
-            alert('已複製代碼: ' + id);
+            navigator.clipboard.writeText(document.getElementById('my-id-display').innerText);
+            alert('已複製代碼');
         }
 
-        // --- 挑戰者邏輯 (Client) ---
-        function toJoinScreen() {
-            showScreen('screen-join');
-        }
+        // --- Client Logic ---
+        function toJoinScreen() { showScreen('screen-join'); }
 
         function joinRoom() {
             const targetID = document.getElementById('input-id').value;
             if(targetID.length !== 4) return alert('請輸入 4 位數代碼');
-
-            document.getElementById('join-status').innerText = "正在搜尋房間...";
+            document.getElementById('join-status').innerText = "連線中...";
             myRole = 'client';
-            
             peer = new Peer(null, peerConfig); 
 
             peer.on('open', () => {
-                document.getElementById('join-status').innerText = "連線中...";
                 conn = peer.connect(targetID);
-                
                 conn.on('open', () => {
                     document.getElementById('join-status').innerText = "連線成功！";
                     setupConnection();
                 });
-                
-                // 簡易超時處理
                 setTimeout(() => {
-                    if(!conn.open) {
-                        document.getElementById('join-status').innerText = "連線超時";
-                        alert('連線失敗，請確認代碼正確');
-                    }
+                    if(!conn.open) { document.getElementById('join-status').innerText = "連線超時"; alert('連線失敗'); }
                 }, 8000);
-            });
-
-            peer.on('error', (err) => {
-                alert('連線錯誤或找不到代碼');
-                document.getElementById('join-status').innerText = "錯誤";
             });
         }
 
-        // --- 連線與資料處理 ---
+        // --- Connection Handling ---
         function setupConnection() {
-            conn.on('data', (data) => {
-                handleData(data);
-            });
+            conn.on('data', (data) => { handleData(data); });
         }
 
         function handleData(data) {
             if (data.type === 'new_question') {
-                // 收到新題目 (Host 傳來的)
                 showScreen('screen-game');
                 resetRound();
-                
-                // 更新 UI
                 document.getElementById('q-text').innerText = data.q.q;
                 document.getElementById('btn-a').innerText = data.q.a;
                 document.getElementById('btn-b').innerText = data.q.b;
                 document.getElementById('btn-c').innerText = data.q.c;
-                
                 currentQIndex = data.index;
-                // 更新進度條
-                document.getElementById('progress-bar').innerText = 
-                    `題目 ${currentQIndex + 1} / ${data.total}`;
-                
+                document.getElementById('progress-bar').innerText = `題目 ${currentQIndex + 1} / ${data.total}`;
+            
             } else if (data.type === 'opponent_choice') {
-                // 對手選了
                 opponentChoice = data.choice;
                 checkResult();
 
             } else if (data.type === 'round_result') {
-                // 回合結算
                 showFeedback(data.match);
-                
+
             } else if (data.type === 'game_over') {
-                // 遊戲結束
                 showResult(data.score, data.total);
+            
+            } else if (data.type === 'restart_game') {
+                // 挑戰者收到重開訊號 -> 顯示等待畫面等題目
+                document.getElementById('restart-msg').innerText = "對方已發起新局，準備中...";
+                document.getElementById('restart-msg').style.display = 'block';
+            } else if (data.type === 'request_restart') {
+                // 發起者收到挑戰者的重開請求 -> 直接開始
+                if (myRole === 'host') restartGame();
             }
         }
 
-        // --- 遊戲邏輯 ---
-
-        // 洗牌功能：只在 Host 端執行
+        // --- Game Logic ---
         function initGameQuestions() {
-            // 複製大題庫
             let shuffled = [...questionPool];
-            // Fisher-Yates 洗牌演算法
             for (let i = shuffled.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
             }
-            // 隨機取出前 N 題
             currentGameQuestions = shuffled.slice(0, QUESTIONS_PER_GAME);
         }
 
@@ -325,8 +288,34 @@
             sendQuestion();
         }
 
+        // 新增：重置遊戲邏輯 (不重新整理網頁)
+        function restartGame() {
+            document.getElementById('btn-restart').disabled = false;
+            document.getElementById('restart-msg').style.display = 'none';
+            // 重新洗牌
+            initGameQuestions(); 
+            // 通知挑戰者準備開始
+            conn.send({ type: 'restart_game' });
+            // 延遲一下開始
+            setTimeout(startGame, 1000);
+        }
+
+        function requestRestart() {
+            const btn = document.getElementById('btn-restart');
+            btn.disabled = true;
+            document.getElementById('restart-msg').style.display = 'block';
+            
+            if (myRole === 'host') {
+                // Host 直接重開
+                restartGame();
+            } else {
+                // Client 發送請求給 Host
+                conn.send({ type: 'request_restart' });
+                document.getElementById('restart-msg').innerText = "已發送請求，等待發起者開始...";
+            }
+        }
+
         function sendQuestion() {
-            // 如果題目用完了，結束遊戲
             if (currentQIndex >= currentGameQuestions.length) {
                 const resultData = { type: 'game_over', score: score, total: currentGameQuestions.length };
                 conn.send(resultData);
@@ -334,85 +323,59 @@
                 return;
             }
             
-            // 取出當前題目的物件
             const q = currentGameQuestions[currentQIndex];
-            
-            // 包裝資料傳給對方
-            const payload = { 
-                type: 'new_question', 
-                q: q, 
-                index: currentQIndex, 
-                total: currentGameQuestions.length 
-            };
-            
+            const payload = { type: 'new_question', q: q, index: currentQIndex, total: currentGameQuestions.length };
             conn.send(payload);
-            handleData(payload); // 自己也執行一樣的動作
+            handleData(payload);
         }
 
         function resetRound() {
             myChoice = null;
             opponentChoice = null;
             document.getElementById('feedback').style.display = 'none';
-            
             ['a', 'b', 'c'].forEach(opt => {
                 const btn = document.getElementById('btn-' + opt);
                 btn.classList.remove('btn-disabled');
                 btn.style.opacity = '1';
-                btn.style.transform = 'scale(1)';
             });
         }
 
         function makeChoice(choice) {
             if (myChoice) return; 
             myChoice = choice;
-            
-            // 視覺回饋：變暗其他選項
             ['a', 'b', 'c'].forEach(opt => {
                 const btn = document.getElementById('btn-' + opt);
                 btn.classList.add('btn-disabled');
-                if (opt !== choice) {
-                    btn.style.opacity = '0.3';
-                }
+                if (opt !== choice) btn.style.opacity = '0.3';
             });
-
             conn.send({ type: 'opponent_choice', choice: choice });
-            
             document.getElementById('game-status').innerText = "等待對方選擇...";
             checkResult();
         }
 
         function checkResult() {
-            // Host 負責判定結果
             if (myRole === 'host' && myChoice && opponentChoice) {
                 const match = (myChoice === opponentChoice);
                 if (match) score++;
-                
-                showFeedback(match); // Host 自己看
-                conn.send({ type: 'round_result', match: match }); // 傳給 Client 看
-
-                setTimeout(() => {
-                    currentQIndex++;
-                    sendQuestion();
-                }, 2000); // 2秒後下一題
+                showFeedback(match);
+                conn.send({ type: 'round_result', match: match });
+                setTimeout(() => { currentQIndex++; sendQuestion(); }, 2000);
             }
         }
 
         function showFeedback(match) {
             const fb = document.getElementById('feedback');
             fb.innerText = match ? "⭕" : "❌";
-            fb.style.color = match ? "#42e695" : "#ff4757"; // 綠色或紅色
+            fb.style.color = match ? "#42e695" : "#ff4757";
             fb.style.display = 'block';
-            
-            // 讓文字閃一下
-            fb.animate([
-                { transform: 'translate(-50%, -50%) scale(0.5)', opacity: 0 },
-                { transform: 'translate(-50%, -50%) scale(1.2)', opacity: 1 },
-                { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 }
-            ], { duration: 300, easing: 'ease-out' });
+            fb.animate([ { transform: 'translate(-50%, -50%) scale(0.5)', opacity: 0 }, { transform: 'translate(-50%, -50%) scale(1.2)', opacity: 1 }, { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 } ], { duration: 300, easing: 'ease-out' });
         }
 
         function showResult(finalScore, totalQuestions) {
             showScreen('screen-result');
+            document.getElementById('btn-restart').disabled = false;
+            document.getElementById('restart-msg').style.display = 'none';
+            
             const percentage = Math.round((finalScore / totalQuestions) * 100);
             document.getElementById('final-score').innerText = percentage + "%";
             
