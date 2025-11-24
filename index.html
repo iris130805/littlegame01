@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>默契大考驗 (新題目版)</title>
+    <title>默契大考驗 (50題隨機版)</title>
     <!-- 引入 PeerJS 和 QRCode -->
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -12,22 +12,23 @@
         .screen { display: none; height: 100vh; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
         .active { display: flex; }
         
-        h1 { margin-bottom: 10px; font-size: 26px; letter-spacing: 1px; }
-        p { color: #ccc; margin-bottom: 30px; }
+        h1 { margin-bottom: 10px; font-size: 24px; letter-spacing: 1px; }
+        p { color: #ccc; margin-bottom: 30px; font-size: 14px; }
         
         input { padding: 12px; border-radius: 8px; border: none; font-size: 18px; text-align: center; width: 80%; margin-bottom: 15px; }
         
-        button { padding: 18px 30px; border-radius: 30px; border: none; font-size: 18px; font-weight: bold; cursor: pointer; width: 85%; max-width: 320px; margin: 12px 0; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        button { padding: 15px 30px; border-radius: 30px; border: none; font-size: 18px; font-weight: bold; cursor: pointer; width: 85%; max-width: 320px; margin: 10px 0; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .btn-create { background: linear-gradient(45deg, #ff6b6b, #ee5253); color: white; }
         .btn-join { background: linear-gradient(45deg, #4facfe, #00f2fe); color: white; }
         .btn-copy { background: #666; color: white; font-size: 14px; padding: 10px; width: auto; box-shadow: none; }
 
         #game-area { width: 100%; max-width: 400px; position: relative; }
-        /* 調整卡片高度 */
-        .question-card { background: white; color: #333; padding: 20px; border-radius: 20px; font-size: 20px; font-weight: bold; margin-bottom: 20px; min-height: 100px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); line-height: 1.4; }
+        
+        /* 題目卡片樣式優化 */
+        .question-card { background: white; color: #333; padding: 25px 20px; border-radius: 20px; font-size: 22px; font-weight: bold; margin-bottom: 20px; min-height: 110px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); line-height: 1.4; }
         
         /* 選項按鈕樣式 */
-        .choice-btn { display: block; width: 100%; padding: 15px; margin-bottom: 12px; border: none; border-radius: 15px; font-size: 18px; color: white; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
+        .choice-btn { display: block; width: 100%; padding: 16px; margin-bottom: 12px; border: none; border-radius: 15px; font-size: 17px; color: white; font-weight: bold; cursor: pointer; transition: transform 0.1s; position: relative; overflow: hidden; }
         
         .btn-a { background: #4facfe; } /* 藍色 */
         .btn-b { background: #f093fb; } /* 粉色 */
@@ -36,10 +37,12 @@
         .btn-disabled { opacity: 0.5; pointer-events: none; }
         .choice-btn:active { transform: scale(0.98); }
 
-        #feedback { font-size: 80px; font-weight: 900; position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-shadow: 0 5px 20px rgba(0,0,0,0.6); display: none; z-index: 99; }
+        #feedback { font-size: 90px; font-weight: 900; position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-shadow: 0 5px 20px rgba(0,0,0,0.6); display: none; z-index: 99; }
 
         #qrcode { background: white; padding: 10px; margin: 10px auto; display: inline-block; border-radius: 10px; }
         .status-tag { background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 15px; font-size: 13px; margin-top: 15px; color: #aaa; }
+        
+        #progress-bar { font-size: 14px; color: #888; margin-bottom: 10px; letter-spacing: 1px;}
     </style>
 </head>
 <body>
@@ -47,19 +50,19 @@
     <!-- 1. 首頁 -->
     <div id="screen-home" class="screen active">
         <h1>💞 書適圈｜默契大考驗</h1>
-        <p>終極三選一，START！</p>
-        <button class="btn-create" onclick="createRoom()">我是發起者（開始遊戲）</button>
-        <button class="btn-join" onclick="toJoinScreen()">我是挑戰者（加入挑戰）</button>
+        <p>50題隨機題庫版<br>每次挑戰題目都不同！</p>
+        <button class="btn-create" onclick="createRoom()">我是發起者（開始）</button>
+        <button class="btn-join" onclick="toJoinScreen()">我是挑戰者（加入）</button>
     </div>
 
     <!-- 2. 發起者等待區 -->
     <div id="screen-host" class="screen">
         <h2>等待挑戰者...</h2>
         <div id="qrcode"></div>
-        <p style="font-size: 14px; margin-top:10px;">請對方掃描或輸入下方代碼：</p>
+        <p style="font-size: 14px; margin-top:10px;">請對方掃描或輸入代碼：</p>
         <h1 id="my-id-display" style="color:#ff6b6b; letter-spacing: 3px; font-size: 40px;">---</h1>
         <button class="btn-copy" onclick="copyID()">複製代碼</button>
-        <div class="status-tag" id="host-status">正在建立連線伺服器...</div>
+        <div class="status-tag" id="host-status">正在建立連線...</div>
         <button onclick="location.reload()" style="background: transparent; border: 1px solid #555; color: #888; font-size: 14px; margin-top: 30px; width: auto; padding: 10px 20px;">取消</button>
     </div>
 
@@ -75,6 +78,7 @@
 
     <!-- 4. 遊戲進行區 -->
     <div id="screen-game" class="screen">
+        <div id="progress-bar">題目 1 / 10</div>
         <div id="game-area">
             <div id="feedback"></div>
             <div class="question-card" id="q-text">題目載入中...</div>
@@ -92,17 +96,65 @@
         <h2>最終默契指數</h2>
         <div style="font-size: 90px; font-weight: bold; margin: 20px 0; color: #f093fb;" id="final-score">0%</div>
         <p id="final-comment" style="font-size: 20px; color: white;">分析中...</p>
-        <button class="btn-create" onclick="location.reload()">再玩一次</button>
+        <button class="btn-create" onclick="location.reload()">再玩一次 (換新題目)</button>
     </div>
 
     <script>
-        // --- 題庫 (已更新為你的題目) ---
-        const questions = [
+        // --- 設定：每局玩幾題？ ---
+        // 建議設為 10 題，這樣 50 題庫可以玩很多次不重複
+        const QUESTIONS_PER_GAME = 10; 
+
+        // --- 你的 50 題題庫 ---
+        const questionPool = [
             { q: "你最喜歡看哪種類型的書？", a: "文學小說", b: "商業理財", c: "心理勵志" },
             { q: "麵線送來時，你的選擇是？", a: "老闆！香菜加爆", b: "絕對不要香菜", c: "我討厭麵線" },
             { q: "你是什麼作息型？", a: "早起鳥", b: "夜貓子", c: "混亂的作息" },
             { q: "電影結局是悲劇 (Bad Ending)，你會？", a: "覺得後勁強，喜歡", b: "心情不好，不喜歡", c: "人生太苦，不看悲劇" },
-            { q: "遇到喜歡的人，你會？", a: "主動出擊", b: "暗示試探", c: "只敢偷偷暗戀" }
+            { q: "遇到喜歡的人，你會？", a: "主動出擊", b: "暗示試探", c: "只敢偷偷暗戀" },
+            { q: "火鍋沾醬派系是？", a: "沙茶醬加爆", b: "清爽醬油醋蔥花", c: "原味主義不沾醬" },
+            { q: "點手搖飲料時，甜度通常是？", a: "全糖或半糖，我是台南人", b: "微糖或一分糖", c: "絕對無糖" },
+            { q: "比薩上面出現鳳梨，你的反應？", a: "超愛！絕配", b: "邪教！請拿掉", c: "沒差，有的吃就好" },
+            { q: "約會吃飯結帳時，你偏好？", a: "我請客或對方請客", b: "嚴格執行 AA 制", c: "輪流請客，不用太細算" },
+            { q: "吃到超好吃的東西，你會？", a: "一定要分一口給對方吃", b: "默默自己吃完", c: "瘋狂拍照發限動" },
+            { q: "對於排隊名店的看法？", a: "排兩小時也願意", b: "超過 15 分鐘就放棄", c: "完全不吃排隊店" },
+            { q: "半夜肚子餓，你會？", a: "立刻點外送或煮泡麵", b: "喝杯水忍住去睡覺", c: "只吃一點點水果或堅果" },
+            { q: "吃咖哩飯的時候，你的吃法是？", a: "全部攪拌在一起吃", b: "飯跟醬分開吃", c: "看心情隨便吃" },
+            { q: "夏天睡覺時的冷氣溫度？", a: "23度以下，就是要蓋厚被", b: "26-27度加電風扇", c: "不開冷氣或只設定時" },
+            { q: "關於做家事（洗碗、倒垃圾），你是？", a: "立刻處理，不喜歡堆積", b: "累積到一定程度再一次做", c: "希望能有洗碗機或掃地機器人" },
+            { q: "牙膏你是怎麼擠的？", a: "從尾端整齊往前擠", b: "從中間隨便擠", c: "快沒了才用力甩" },
+            { q: "休假日的鬧鐘設定？", a: "和平常一樣早起", b: "睡到自然醒", c: "設一堆鬧鐘但一直賴床" },
+            { q: "房間出現巨大蟑螂，你會？", a: "尖叫逃跑求救", b: "拿拖鞋/殺蟲劑決一死戰", c: "無視它，希望能和平共處" },
+            { q: "洗澡的時間點通常是？", a: "回家卸妝換衣立刻洗", b: "睡覺前最後一刻才洗", c: "早上出門前才洗" },
+            { q: "手機剩多少電量會讓你焦慮？", a: "低於 80% 就想充", b: "變紅血（20%）才緊張", c: "沒電就算了，隨緣" },
+            { q: "出門旅行的行李打包風格？", a: "列清單，甚至帶藥品急救包", b: "出發前一晚隨便塞", c: "帶錢就好，缺什麼當地買" },
+            { q: "和另一半吵架時，你會？", a: "當下一定要講清楚", b: "先冷戰，冷靜幾天再說", c: "撒嬌或裝沒事帶過" },
+            { q: "在派對或聚會中，你的角色通常是？", a: "帶動氣氛的主持人", b: "安靜在角落滑手機／吃東西", c: "只跟認識的人聊天" },
+            { q: "收到訊息（Line/IG），你的回覆速度？", a: "秒讀秒回", b: "看心情，有時會放很久", c: "常常忘記回" },
+            { q: "對於「承諾」這件事，你的看法？", a: "說到一定要做到", b: "計畫趕不上變化，隨性點", c: "不輕易給承諾" },
+            { q: "心情不好時，你希望對方？", a: "給我擁抱和安慰", b: "陪我一起罵爆", c: "讓我一個人靜一靜" },
+            { q: "做重大決定（如換工作、搬家）時？", a: "自己決定就好", b: "會詢問周遭所有人意見", c: "只跟最親密的人商量" },
+            { q: "走在路上看到推銷員，你會？", a: "停下來聽聽看", b: "微笑揮手拒絕", c: "裝作沒看到快速通過" },
+            { q: "對於情侶裝的看法？", a: "超愛！想要昭告天下", b: "低調搭配（同色系／風格）即可", c: "完全無法接受" },
+            { q: "前任送的禮物或照片怎麼處理？", a: "全部丟掉或刪除", b: "留著當紀念，不影響感情", c: "看東西實不實用決定" },
+            { q: "你相信星座或算命嗎？", a: "超級相信，每天看運勢", b: "參考看看，好的才信", c: "完全不信，命運掌握在自己手裡" },
+            { q: "對於紀念日（情人節、週年）的態度？", a: "一定要精心準備慶祝", b: "吃頓好的就不錯了", c: "平凡過日子比節日重要" },
+            { q: "如果你發現對方偷看你手機？", a: "大發雷霆，覺得沒隱私", b: "沒差，反正沒什麼不可告人的", c: "那我也要看你的" },
+            { q: "理想的約會行程是？", a: "網美景點打卡拍照", b: "在家看電影叫外送", c: "戶外踏青或運動" },
+            { q: "在公共場合，你會願意放閃嗎？", a: "會！牽手擁抱親親都沒問題", b: "只接受牽手", c: "不要，回家再說" },
+            { q: "去KTV唱歌時，你是？", a: "麥霸，每首都想唱", b: "分母，專門去吃牛肉麵的", c: "氣氛組，負責鼓掌搖鈴鼓" },
+            { q: "看電影時，你比較喜歡哪種類型？", a: "漫威動作爽片", b: "燒腦懸疑片", c: "愛情文藝片" },
+            { q: "對於玩遊戲（手遊／電玩）的態度？", a: "重度玩家，會課金", b: "打發時間玩一下", c: "完全沒興趣" },
+            { q: "如果有超能力，你想要？", a: "瞬間移動", b: "讀心術", c: "隱形" },
+            { q: "如果中了樂透頭獎，第一件事？", a: "辭職去環遊世界", b: "買房買車投資", c: "低調存起來，生活照舊" },
+            { q: "比較喜歡貓還是狗？", a: "狗派", b: "貓派", c: "都不養，喜歡看別人的就好" },
+            { q: "安排自助旅行時，你是？", a: "Excel表格控，行程排滿滿", b: "只訂機票住宿，剩下隨意", c: "跟屁蟲，跟著走就好" },
+            { q: "坐副駕駛座時，你會？", a: "幫忙看導航、餵食、陪聊", b: "一上車就睡死", c: "緊張兮兮一直指揮交通" },
+            { q: "遇到下雨天，原本的戶外計畫？", a: "穿雨衣／撐傘照樣去", b: "改成室內備案", c: "取消回家睡覺" },
+            { q: "關於走路速度？", a: "競走選手，走超快", b: "配合對方的速度", c: "漫步雲端，走很慢" },
+            { q: "如果不小心把對方的東西弄壞了？", a: "立刻承認並買新的賠償", b: "偷偷修好或買一樣的", c: "裝作不知道" },
+            { q: "對於LINE的「已讀不回」？", a: "很在意，會胡思亂想", b: "可能在忙，晚點就會回", c: "我也常這樣，沒差" },
+            { q: "喜歡哪種天氣？", a: "陽光普照的大晴天", b: "陰雨綿綿的憂鬱天", c: "涼爽的陰天" },
+            { q: "如果世界末日來了，你會？", a: "跟家人愛人在一起", b: "吃遍所有想吃的美食", c: "嘗試去做以前不敢做的事" }
         ];
 
         // --- 連線設定 ---
@@ -115,7 +167,7 @@
             }
         };
 
-        // --- 變數 ---
+        // --- 全域變數 ---
         let peer;
         let conn;
         let myRole = ''; 
@@ -123,13 +175,15 @@
         let myChoice = null;
         let opponentChoice = null;
         let score = 0;
+        let currentGameQuestions = []; // 用來存當局隨機選出的題目
 
+        // --- 畫面切換 ---
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
         }
 
-        // --- 發起者邏輯 ---
+        // --- 發起者邏輯 (Host) ---
         function createRoom() {
             myRole = 'host';
             showScreen('screen-host');
@@ -138,7 +192,7 @@
             peer = new Peer(randomID, peerConfig); 
 
             peer.on('open', (id) => {
-                document.getElementById('host-status').innerText = "房間已建立，等待挑戰者...";
+                document.getElementById('host-status').innerText = "等待挑戰者...";
                 document.getElementById('my-id-display').innerText = id;
                 
                 document.getElementById("qrcode").innerHTML = "";
@@ -152,13 +206,17 @@
             peer.on('connection', (c) => {
                 conn = c;
                 setupConnection();
-                document.getElementById('host-status').innerText = "連線成功！即將開始...";
+                document.getElementById('host-status').innerText = "連線成功！";
+                
+                // --- 關鍵修改：發起者負責洗牌 ---
+                initGameQuestions();
+                
                 setTimeout(startGame, 1500);
             });
             
             peer.on('error', (err) => {
                 if(err.type === 'peer-unavailable') return;
-                alert('網路連線不穩，請重新整理網頁再試一次');
+                alert('網路連線問題，請重整後再試');
                 location.reload();
             });
         }
@@ -169,7 +227,7 @@
             alert('已複製代碼: ' + id);
         }
 
-        // --- 挑戰者邏輯 ---
+        // --- 挑戰者邏輯 (Client) ---
         function toJoinScreen() {
             showScreen('screen-join');
         }
@@ -192,25 +250,22 @@
                     setupConnection();
                 });
                 
+                // 簡易超時處理
                 setTimeout(() => {
                     if(!conn.open) {
                         document.getElementById('join-status').innerText = "連線超時";
-                        alert('連線失敗！請確認代碼正確或網路暢通。');
+                        alert('連線失敗，請確認代碼正確');
                     }
                 }, 8000);
             });
 
             peer.on('error', (err) => {
-                if(err.type === 'peer-unavailable') {
-                    alert('找不到這個代碼，請確認發起者是否還在等待畫面上。');
-                } else {
-                    alert('連線錯誤: ' + err.type);
-                }
+                alert('連線錯誤或找不到代碼');
                 document.getElementById('join-status').innerText = "錯誤";
             });
         }
 
-        // --- 共通連線處理 ---
+        // --- 連線與資料處理 ---
         function setupConnection() {
             conn.on('data', (data) => {
                 handleData(data);
@@ -219,27 +274,51 @@
 
         function handleData(data) {
             if (data.type === 'new_question') {
+                // 收到新題目 (Host 傳來的)
                 showScreen('screen-game');
                 resetRound();
+                
+                // 更新 UI
                 document.getElementById('q-text').innerText = data.q.q;
                 document.getElementById('btn-a').innerText = data.q.a;
                 document.getElementById('btn-b').innerText = data.q.b;
                 document.getElementById('btn-c').innerText = data.q.c;
+                
                 currentQIndex = data.index;
+                // 更新進度條
+                document.getElementById('progress-bar').innerText = 
+                    `題目 ${currentQIndex + 1} / ${data.total}`;
                 
             } else if (data.type === 'opponent_choice') {
+                // 對手選了
                 opponentChoice = data.choice;
                 checkResult();
 
             } else if (data.type === 'round_result') {
+                // 回合結算
                 showFeedback(data.match);
                 
             } else if (data.type === 'game_over') {
-                showResult(data.score);
+                // 遊戲結束
+                showResult(data.score, data.total);
             }
         }
 
-        // --- 遊戲流程 ---
+        // --- 遊戲邏輯 ---
+
+        // 洗牌功能：只在 Host 端執行
+        function initGameQuestions() {
+            // 複製大題庫
+            let shuffled = [...questionPool];
+            // Fisher-Yates 洗牌演算法
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            // 隨機取出前 N 題
+            currentGameQuestions = shuffled.slice(0, QUESTIONS_PER_GAME);
+        }
+
         function startGame() {
             score = 0;
             currentQIndex = 0;
@@ -247,16 +326,27 @@
         }
 
         function sendQuestion() {
-            if (currentQIndex >= questions.length) {
-                const resultData = { type: 'game_over', score: score };
+            // 如果題目用完了，結束遊戲
+            if (currentQIndex >= currentGameQuestions.length) {
+                const resultData = { type: 'game_over', score: score, total: currentGameQuestions.length };
                 conn.send(resultData);
-                showResult(score);
+                showResult(score, currentGameQuestions.length);
                 return;
             }
             
-            const q = questions[currentQIndex];
-            handleData({ type: 'new_question', q: q, index: currentQIndex });
-            conn.send({ type: 'new_question', q: q, index: currentQIndex });
+            // 取出當前題目的物件
+            const q = currentGameQuestions[currentQIndex];
+            
+            // 包裝資料傳給對方
+            const payload = { 
+                type: 'new_question', 
+                q: q, 
+                index: currentQIndex, 
+                total: currentGameQuestions.length 
+            };
+            
+            conn.send(payload);
+            handleData(payload); // 自己也執行一樣的動作
         }
 
         function resetRound() {
@@ -268,6 +358,7 @@
                 const btn = document.getElementById('btn-' + opt);
                 btn.classList.remove('btn-disabled');
                 btn.style.opacity = '1';
+                btn.style.transform = 'scale(1)';
             });
         }
 
@@ -275,13 +366,12 @@
             if (myChoice) return; 
             myChoice = choice;
             
+            // 視覺回饋：變暗其他選項
             ['a', 'b', 'c'].forEach(opt => {
                 const btn = document.getElementById('btn-' + opt);
                 btn.classList.add('btn-disabled');
                 if (opt !== choice) {
                     btn.style.opacity = '0.3';
-                } else {
-                    btn.style.opacity = '1';
                 }
             });
 
@@ -292,36 +382,44 @@
         }
 
         function checkResult() {
+            // Host 負責判定結果
             if (myRole === 'host' && myChoice && opponentChoice) {
                 const match = (myChoice === opponentChoice);
                 if (match) score++;
                 
-                showFeedback(match);
-                conn.send({ type: 'round_result', match: match });
+                showFeedback(match); // Host 自己看
+                conn.send({ type: 'round_result', match: match }); // 傳給 Client 看
 
                 setTimeout(() => {
                     currentQIndex++;
                     sendQuestion();
-                }, 2000);
+                }, 2000); // 2秒後下一題
             }
         }
 
         function showFeedback(match) {
             const fb = document.getElementById('feedback');
             fb.innerText = match ? "⭕" : "❌";
-            fb.style.color = match ? "#42e695" : "#ff4757";
+            fb.style.color = match ? "#42e695" : "#ff4757"; // 綠色或紅色
             fb.style.display = 'block';
+            
+            // 讓文字閃一下
+            fb.animate([
+                { transform: 'translate(-50%, -50%) scale(0.5)', opacity: 0 },
+                { transform: 'translate(-50%, -50%) scale(1.2)', opacity: 1 },
+                { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 }
+            ], { duration: 300, easing: 'ease-out' });
         }
 
-        function showResult(finalScore) {
+        function showResult(finalScore, totalQuestions) {
             showScreen('screen-result');
-            const percentage = Math.round((finalScore / questions.length) * 100);
+            const percentage = Math.round((finalScore / totalQuestions) * 100);
             document.getElementById('final-score').innerText = percentage + "%";
             
             let comment = "";
             if (percentage == 100) comment = "天作之合！這是命運吧！";
-            else if (percentage >= 80) comment = "默契超好！快約下次吃飯！";
-            else if (percentage >= 60) comment = "蠻合得來的喔，有很多話題可聊";
+            else if (percentage >= 80) comment = "默契超好！靈魂伴侶等級！";
+            else if (percentage >= 60) comment = "蠻合得來的，有很多話題可聊";
             else if (percentage >= 40) comment = "性格互補，反而更有火花？";
             else comment = "世界觀完全不同，這太有趣了！";
             document.getElementById('final-comment').innerText = comment;
